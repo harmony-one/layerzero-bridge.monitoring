@@ -36,6 +36,8 @@ enum EVENT {
 interface IEventFilterParams extends IBridgeEvent {
   chain: CHAIN,
   event: EVENT
+  size: number,
+  page: number,
 }
 
 const createDefaultCache = () => {
@@ -105,13 +107,19 @@ export class ErrorTrackerService {
       eventName: 'PayloadStored',
       getEventCallback: async (res) => {
         if (res?.name === 'PayloadStored') {
-          console.log('PayloadStored', res);
-          this.events[EVENT.PayloadStored][CHAIN.HMY].push(res);
+          if (!await this.eventsRep.findOneBy({ transactionHash: res.transactionHash })) {
+            await this.eventsRep.save({
+              name: 'PayloadStored',
+              transactionHash: res.transactionHash,
+              blockNumber: res.blockNumber,
+              address: res.address,
+              payload: res,
+              chain: CHAIN.HMY
+            });
+          }
         }
       }
     });
-
-    this.hmyLzEndpointTracker.start();
 
     this.hmyMultisigTracker = new EventTrackerService({
       chain: CHAIN.HMY,
@@ -121,13 +129,43 @@ export class ErrorTrackerService {
       eventName: 'ExecutionFailure',
       getEventCallback: async (res) => {
         if (res?.name === 'ExecutionFailure') {
-          console.log('ExecutionFailure', res);
-          this.events[EVENT.ExecutionFailure][CHAIN.HMY].push(res);
+          if (!await this.eventsRep.findOneBy({ transactionHash: res.transactionHash })) {
+            await this.eventsRep.save({
+              name: 'ExecutionFailure',
+              transactionHash: res.transactionHash,
+              blockNumber: res.blockNumber,
+              address: res.address,
+              payload: res,
+              chain: CHAIN.HMY
+            });
+          }
         }
       }
     });
+  }
 
-    this.hmyMultisigTracker.start();
+  async start() {
+    try {
+      const lastRec = await this.eventsRep.findOne({
+        where: [{ name: 'ExecutionFailure' }],
+        order: { id: 'DESC' }
+      })
+      this.hmyMultisigTracker.setStartBlock(Number(lastRec?.blockNumber || 0));
+      this.hmyMultisigTracker.start();
+    } catch (e) {
+      this.logger.error(`Start hmyMultisigTracker Error`, e);
+    }
+
+    try {
+      const lastRec = await this.eventsRep.findOne({
+        where: [{ name: 'PayloadStored' }],
+        order: { id: 'DESC' }
+      })
+      this.hmyLzEndpointTracker.setStartBlock(Number(lastRec?.blockNumber || 0));
+      this.hmyLzEndpointTracker.start();
+    } catch (e) {
+      this.logger.error(`Start hmyMultisigTracker Error`, e);
+    }
   }
 
   async getTransfers() {
@@ -147,17 +185,20 @@ export class ErrorTrackerService {
     }
   }
 
-  getEvents = (filters: IEventFilterParams) => {
-    const { chain = CHAIN.HMY, event = EVENT.ExecutionFailure, ...params } = filters;
+  getEvents = async (filters: IEventFilterParams) => {
+    const {
+      chain = CHAIN.HMY,
+      event = EVENT.ExecutionFailure,
+      size = 10,
+      page = 0,
+      transactionHash,
+    } = filters;
 
-    let events = this.events[event][chain];
-
-    events = events.filter(e => {
-      return Object.keys(params).every(
-        key => String(e[key]).toUpperCase() === String(params[key]).toUpperCase()
-      )
-    })
-
-    return events.slice(0, 10);
+    return await this.eventsRep.findAndCount({
+      where: { name: event, chain: chain },
+      order: { id: 'DESC' },
+      take: size,
+      skip: page * size
+    });
   }
 }
