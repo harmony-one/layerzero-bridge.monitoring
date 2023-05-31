@@ -26,7 +26,6 @@ import { Web3Module } from 'nest-web3';
     TypeOrmModule.forRootAsync({
       imports: [
         ConfigModule,
-        PrometheusModule.register()
       ],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
@@ -41,7 +40,8 @@ import { Web3Module } from 'nest-web3';
       inject: [ConfigService],
     }),
     Web3Module,
-    ErrorTrackerModule
+    ErrorTrackerModule,
+    PrometheusModule.register()
   ],
   controllers: [AppController],
   providers: [AppService],
