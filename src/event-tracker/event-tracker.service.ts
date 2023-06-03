@@ -76,6 +76,11 @@ export class EventTrackerService {
     this.eventName = params.eventName || '';
   }
 
+  setStartBlock = (startBlock: number) => {
+    this.lastBlock = startBlock;
+    this.startBlock = startBlock;
+  }
+
   async start() {
     try {
       // this.lastBlock = await getContractDeploymentBlock(this.contractAddress);
@@ -83,8 +88,10 @@ export class EventTrackerService {
 
       this.lastNodeBlock = await this.web3.eth.getBlockNumber();
 
-      this.lastBlock = this.lastNodeBlock - 30000;
-      this.startBlock = this.lastBlock;
+      if(!this.startBlock) {
+        this.lastBlock = 40000000;
+        this.startBlock = this.lastBlock;
+      }
 
       // const defStartBlock = Number(this.lastNodeBlock) - 250000;
 

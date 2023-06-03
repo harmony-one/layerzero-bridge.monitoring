@@ -2,8 +2,8 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { ErrorTrackerService } from './error-tracker.service';
 
-@ApiTags('monitoring')
-@Controller('monitoring')
+@ApiTags()
+@Controller()
 export class ErrorTrackerController {
   constructor(
     private readonly trackerService: ErrorTrackerService

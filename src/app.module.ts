@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { PrometheusModule } from "@willsoto/nestjs-prometheus";
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -23,7 +24,9 @@ import { Web3Module } from 'nest-web3';
       inject: [ConfigService]
     }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
+      imports: [
+        ConfigModule,
+      ],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         host: configService.get('DB_HOST'),
@@ -37,7 +40,8 @@ import { Web3Module } from 'nest-web3';
       inject: [ConfigService],
     }),
     Web3Module,
-    ErrorTrackerModule
+    ErrorTrackerModule,
+    PrometheusModule.register()
   ],
   controllers: [AppController],
   providers: [AppService],

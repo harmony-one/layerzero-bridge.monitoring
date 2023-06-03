@@ -11,18 +11,21 @@ export class Events {
   @PrimaryGeneratedColumn()
   id?: number;
 
-  @Column()
-  from: string;
-
-  @Column()
-  to: string;
-
-  @Column()
-  value: string;
-
   @Column({ unique: true })
-  hash: string;
+  transactionHash: string;
 
   @Column()
-  blockNumber: number;
+  address: string;
+
+  @Column()
+  name: string;
+
+  @Column()
+  chain: string;
+
+  @Column()
+  blockNumber: string;
+
+  @Column({ type: 'json' })
+  payload: any;
 }
